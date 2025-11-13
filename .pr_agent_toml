@@ -1,0 +1,12 @@
+[jira]
+jira_base_url = "https://qodo-ai.atlassian.net/"
+
+[rag_arguments]
+enable_rag=true
+
+[pr_reviewer]
+require_ticket_analysis_review = true  # Validates PR against Jira ticket
+# extra_instructions = "Focus on security vulnerabilities and performance issues"
+
+#[pr_code_suggestions]
+# extra_instructions = "Prioritize bug fixes and error handling"
