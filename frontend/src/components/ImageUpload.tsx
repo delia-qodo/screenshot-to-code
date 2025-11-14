@@ -5,6 +5,17 @@ import { URLS } from "../urls";
 import ScreenRecorder from "./recording/ScreenRecorder";
 import { ScreenRecorderState } from "../types";
 
+// Simple file validation helper
+const validateFileSize = (file: File): boolean => {
+  const maxSize = 20 * 1024 * 1024; // 20MB
+  return file.size <= maxSize;
+};
+
+const validateFileType = (file: File): boolean => {
+  const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'video/quicktime', 'video/mp4', 'video/webm'];
+  return allowedTypes.includes(file.type);
+};
+
 const baseStyle = {
   flex: 1,
   width: "80%",
@@ -79,9 +90,24 @@ function ImageUpload({ setReferenceImages }: Props) {
         "video/webm": [".webm"],
       },
       onDrop: (acceptedFiles) => {
+        // Additional validation for accepted files
+        const validFiles = acceptedFiles.filter(file => {
+          if (!validateFileSize(file)) {
+            toast.error(`File ${file.name} is too large. Maximum size is 20MB.`);
+            return false;
+          }
+          if (!validateFileType(file)) {
+            toast.error(`File ${file.name} has unsupported format.`);
+            return false;
+          }
+          return true;
+        });
+
+        if (validFiles.length === 0) return;
+
         // Set up the preview thumbnail images
         setFiles(
-          acceptedFiles.map((file: File) =>
+          validFiles.map((file: File) =>
             Object.assign(file, {
               preview: URL.createObjectURL(file),
             })
@@ -89,7 +115,7 @@ function ImageUpload({ setReferenceImages }: Props) {
         );
 
         // Convert images to data URLs and set the prompt images state
-        Promise.all(acceptedFiles.map((file) => fileToDataURL(file)))
+        Promise.all(validFiles.map((file) => fileToDataURL(file)))
           .then((dataUrls) => {
             if (dataUrls.length > 0) {
               setReferenceImages(

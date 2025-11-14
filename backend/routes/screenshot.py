@@ -2,8 +2,15 @@ import base64
 from fastapi import APIRouter
 from pydantic import BaseModel
 import httpx
+import hashlib
+import os
 
 router = APIRouter()
+
+# Simple cache for screenshots - could be improved with Redis
+SCREENSHOT_CACHE_DIR = "screenshot_cache"
+if not os.path.exists(SCREENSHOT_CACHE_DIR):
+    os.makedirs(SCREENSHOT_CACHE_DIR)
 
 
 def bytes_to_data_url(image_bytes: bytes, mime_type: str) -> str:
@@ -57,8 +64,23 @@ async def app_screenshot(request: ScreenshotRequest):
     url = request.url
     api_key = request.apiKey
 
-    # TODO: Add error handling
-    image_bytes = await capture_screenshot(url, api_key=api_key)
+    # Simple caching mechanism for screenshots
+    cache_key = hashlib.md5(url.encode()).hexdigest()
+    cache_file = os.path.join(SCREENSHOT_CACHE_DIR, f"{cache_key}.png")
+    
+    # Check if cached version exists
+    if os.path.exists(cache_file):
+        with open(cache_file, "rb") as f:
+            image_bytes = f.read()
+        print(f"Using cached screenshot for {url}")
+    else:
+        # TODO: Add error handling
+        image_bytes = await capture_screenshot(url, api_key=api_key)
+        
+        # Cache the screenshot
+        with open(cache_file, "wb") as f:
+            f.write(image_bytes)
+        print(f"Cached new screenshot for {url}")
 
     # Convert the image bytes to a data url
     data_url = bytes_to_data_url(image_bytes, "image/png")

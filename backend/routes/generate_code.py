@@ -1,6 +1,7 @@
 import asyncio
 from dataclasses import dataclass
 import traceback
+import uuid
 from fastapi import APIRouter, WebSocket
 import openai
 from codegen.utils import extract_html_content
@@ -159,7 +160,13 @@ def get_from_settings_dialog_or_env(
 @router.websocket("/generate-code")
 async def stream_code(websocket: WebSocket):
     await websocket.accept()
-    print("Incoming websocket connection...")
+    
+    # Generate unique request ID for tracking
+    request_id = str(uuid.uuid4())[:8]
+    print(f"Incoming websocket connection... Request ID: {request_id}")
+    
+    # Simple request tracking
+    start_time = asyncio.get_event_loop().time()
 
     ## Communication protocol setup
     async def throw_error(
@@ -176,12 +183,12 @@ async def stream_code(websocket: WebSocket):
     ):
         # Print for debugging on the backend
         if type == "error":
-            print(f"Error (variant {variantIndex}): {value}")
+            print(f"[{request_id}] Error (variant {variantIndex}): {value}")
         elif type == "status":
-            print(f"Status (variant {variantIndex}): {value}")
+            print(f"[{request_id}] Status (variant {variantIndex}): {value}")
 
         await websocket.send_json(
-            {"type": type, "value": value, "variantIndex": variantIndex}
+            {"type": type, "value": value, "variantIndex": variantIndex, "requestId": request_id}
         )
 
     ## Parameter extract and validation
@@ -429,5 +436,9 @@ async def stream_code(websocket: WebSocket):
     for index, updated_html in enumerate(updated_completions):
         await send_message("setCode", updated_html, index)
         await send_message("status", "Code generation complete.", index)
+
+    # Log completion metrics
+    total_time = asyncio.get_event_loop().time() - start_time
+    print(f"[{request_id}] Request completed in {total_time:.2f}s")
 
     await websocket.close()
