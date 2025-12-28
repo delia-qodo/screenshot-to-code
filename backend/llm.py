@@ -29,6 +29,7 @@ class Llm(Enum):
     CLAUDE_3_5_SONNET_2024_10_22 = "claude-3-5-sonnet-20241022"
     GEMINI_2_0_FLASH_EXP = "gemini-2.0-flash-exp"
     O1_2024_12_17 = "o1-2024-12-17"
+    GROK_4 = "grok-4"
 
 
 class Completion(TypedDict):
@@ -253,6 +254,66 @@ async def stream_claude_response_native(
             "duration": completion_time,
             "code": response.content[0].text,  # type: ignore
         }
+
+
+async def stream_grok_response(
+    messages: List[ChatCompletionMessageParam],
+    api_key: str,
+    base_url: str | None,
+    callback: Callable[[str], Awaitable[None]],
+    model: Llm,
+) -> Completion:
+    """
+    Stream response from Grok-4 using OpenAI-compatible API.
+    
+    Grok-4 (by xAI) implements an OpenAI-compatible API interface, which allows us to 
+    leverage the existing AsyncOpenAI client rather than implementing a custom client.
+    This ensures consistency with our OpenAI integration while supporting Grok's 
+    specific model capabilities and endpoints.
+    
+    The function uses the official xAI API endpoint (https://api.x.ai/v1) by default,
+    but supports custom base URLs for proxy configurations or alternative deployments.
+    """
+    start_time = time.time()
+    
+    # Use xAI's API endpoint if no custom base URL is provided
+    if not base_url:
+        base_url = "https://api.x.ai/v1"
+    
+    client = AsyncOpenAI(api_key=api_key, base_url=base_url)
+
+    # Base parameters for Grok-4
+    params = {
+        "model": model.value,
+        "messages": messages,
+        "temperature": 0,
+        "stream": True,
+        "max_tokens": 8192,  # Grok-4's token limit
+        "timeout": 600,
+    }
+
+    try:
+        stream = await client.chat.completions.create(**params)  # type: ignore
+        full_response = ""
+        async for chunk in stream:  # type: ignore
+            assert isinstance(chunk, ChatCompletionChunk)
+            if (
+                chunk.choices
+                and len(chunk.choices) > 0
+                and chunk.choices[0].delta
+                and chunk.choices[0].delta.content
+            ):
+                content = chunk.choices[0].delta.content or ""
+                full_response += content
+                await callback(content)
+    except Exception as e:
+        print(f"[GROK] Error during streaming: {e}")
+        raise
+    finally:
+        await client.close()
+
+    completion_time = time.time() - start_time
+    return {"duration": completion_time, "code": full_response}
 
 
 async def stream_gemini_response(

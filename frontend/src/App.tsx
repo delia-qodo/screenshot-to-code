@@ -62,6 +62,8 @@ function App() {
       openAiApiKey: null,
       openAiBaseURL: null,
       anthropicApiKey: null,
+      grokApiKey: null,
+      grokBaseURL: null,
       screenshotOneApiKey: null,
       isImageGenerationEnabled: true,
       editorTheme: EditorTheme.COBALT,

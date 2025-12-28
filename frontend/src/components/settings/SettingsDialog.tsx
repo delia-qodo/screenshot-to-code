@@ -132,6 +132,59 @@ function SettingsDialog({ settings, setSettings }: Props) {
             />
           </div>
 
+          <div>
+            <Label htmlFor="grok-api-key">
+              <div>Grok/xAI API key</div>
+              <div className="font-light mt-1 text-xs leading-relaxed">
+                Only stored in your browser. Never stored on servers. Overrides
+                your .env config. Get your key from{" "}
+                <a
+                  href="https://x.ai"
+                  className="underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  x.ai
+                </a>
+              </div>
+            </Label>
+
+            <Input
+              id="grok-api-key"
+              placeholder="Grok API key"
+              value={settings.grokApiKey || ""}
+              onChange={(e) =>
+                setSettings((s) => ({
+                  ...s,
+                  grokApiKey: e.target.value,
+                }))
+              }
+            />
+          </div>
+
+          {!IS_RUNNING_ON_CLOUD && (
+            <div>
+              <Label htmlFor="grok-base-url">
+                <div>Grok Base URL (optional)</div>
+                <div className="font-light mt-2 leading-relaxed">
+                  Replace with a proxy URL if you don't want to use the default xAI endpoint.
+                </div>
+              </Label>
+
+              <Input
+                id="grok-base-url"
+                placeholder="Grok Base URL"
+                value={settings.grokBaseURL || ""}
+                onChange={(e) =>
+                  setSettings((s) => ({
+                    ...s,
+                    grokBaseURL: e.target.value,
+                  }))
+                }
+              />
+            </div>
+          )}
+
           <Accordion type="single" collapsible className="w-full">
             <AccordionItem value="item-1">
               <AccordionTrigger>Screenshot by URL Config</AccordionTrigger>

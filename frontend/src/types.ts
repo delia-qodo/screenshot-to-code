@@ -17,6 +17,8 @@ export interface Settings {
   // Only relevant for hosted version
   isTermOfServiceAccepted: boolean;
   anthropicApiKey: string | null; // Added property for anthropic API key
+  grokApiKey: string | null; // Added property for Grok API key
+  grokBaseURL: string | null; // Added property for Grok base URL
 }
 
 export enum AppState {

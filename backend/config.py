@@ -9,7 +9,9 @@ NUM_VARIANTS = 2
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", None)
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", None)
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", None)
+GROK_API_KEY = os.environ.get("GROK_API_KEY", None)
 OPENAI_BASE_URL = os.environ.get("OPENAI_BASE_URL", None)
+GROK_BASE_URL = os.environ.get("GROK_BASE_URL", None)  # Optional, defaults to https://api.x.ai/v1
 
 # Image generation (optional)
 REPLICATE_API_KEY = os.environ.get("REPLICATE_API_KEY", None)

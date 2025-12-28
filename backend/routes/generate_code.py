@@ -7,6 +7,8 @@ from codegen.utils import extract_html_content
 from config import (
     ANTHROPIC_API_KEY,
     GEMINI_API_KEY,
+    GROK_API_KEY,
+    GROK_BASE_URL,
     IS_PROD,
     NUM_VARIANTS,
     OPENAI_API_KEY,
@@ -21,6 +23,7 @@ from llm import (
     stream_claude_response,
     stream_claude_response_native,
     stream_gemini_response,
+    stream_grok_response,
     stream_openai_response,
 )
 from fs_logging.core import write_logs
@@ -80,7 +83,9 @@ class ExtractedParams:
     should_generate_images: bool
     openai_api_key: str | None
     anthropic_api_key: str | None
+    grok_api_key: str | None
     openai_base_url: str | None
+    grok_base_url: str | None
     generation_type: Literal["create", "update"]
 
 
@@ -110,6 +115,11 @@ async def extract_params(
         params, "anthropicApiKey", ANTHROPIC_API_KEY
     )
 
+    # Get Grok API key
+    grok_api_key = get_from_settings_dialog_or_env(
+        params, "grokApiKey", GROK_API_KEY
+    )
+
     # Base URL for OpenAI API
     openai_base_url: str | None = None
     # Disable user-specified OpenAI Base URL in prod
@@ -119,6 +129,16 @@ async def extract_params(
         )
     if not openai_base_url:
         print("Using official OpenAI URL")
+
+    # Base URL for Grok API
+    grok_base_url: str | None = None
+    # Disable user-specified Grok Base URL in prod
+    if not IS_PROD:
+        grok_base_url = get_from_settings_dialog_or_env(
+            params, "grokBaseURL", GROK_BASE_URL
+        )
+    if not grok_base_url:
+        print("Using official xAI/Grok URL")
 
     # Get the image generation flag from the request. Fall back to True if not provided.
     should_generate_images = bool(params.get("isImageGenerationEnabled", True))
@@ -136,7 +156,9 @@ async def extract_params(
         should_generate_images=should_generate_images,
         openai_api_key=openai_api_key,
         anthropic_api_key=anthropic_api_key,
+        grok_api_key=grok_api_key,
         openai_base_url=openai_base_url,
+        grok_base_url=grok_base_url,
         generation_type=generation_type,
     )
 
@@ -196,6 +218,8 @@ async def stream_code(websocket: WebSocket):
     openai_api_key = extracted_params.openai_api_key
     openai_base_url = extracted_params.openai_base_url
     anthropic_api_key = extracted_params.anthropic_api_key
+    grok_api_key = extracted_params.grok_api_key
+    grok_base_url = extracted_params.grok_base_url
     should_generate_images = extracted_params.should_generate_images
     generation_type = extracted_params.generation_type
 
@@ -262,30 +286,66 @@ async def stream_code(websocket: WebSocket):
                 else:
                     claude_model = Llm.CLAUDE_3_5_SONNET_2024_06_20
 
-                if openai_api_key and anthropic_api_key:
+                # Model selection strategy with Grok support
+                if grok_api_key and anthropic_api_key:
+                    # Grok + Claude combination
+                    variant_models = [
+                        Llm.GROK_4,
+                        claude_model,
+                    ]
+                elif grok_api_key and openai_api_key:
+                    # Grok + GPT combination
+                    variant_models = [
+                        Llm.GROK_4,
+                        Llm.GPT_4O_2024_11_20,
+                    ]
+                elif openai_api_key and anthropic_api_key:
+                    # Original GPT + Claude combination
                     variant_models = [
                         claude_model,
                         Llm.GPT_4O_2024_11_20,
                     ]
+                elif grok_api_key:
+                    # Grok only
+                    variant_models = [
+                        Llm.GROK_4,
+                        Llm.GROK_4,
+                    ]
                 elif openai_api_key:
+                    # GPT only
                     variant_models = [
                         Llm.GPT_4O_2024_11_20,
                         Llm.GPT_4O_2024_11_20,
                     ]
                 elif anthropic_api_key:
+                    # Claude only
                     variant_models = [
                         claude_model,
                         Llm.CLAUDE_3_5_SONNET_2024_06_20,
                     ]
                 else:
                     await throw_error(
-                        "No OpenAI or Anthropic API key found. Please add the environment variable OPENAI_API_KEY or ANTHROPIC_API_KEY to backend/.env or in the settings dialog. If you add it to .env, make sure to restart the backend server."
+                        "No OpenAI, Anthropic, or Grok API key found. Please add the environment variable OPENAI_API_KEY, ANTHROPIC_API_KEY, or GROK_API_KEY to backend/.env or in the settings dialog. If you add it to .env, make sure to restart the backend server."
                     )
-                    raise Exception("No OpenAI or Anthropic key")
+                    raise Exception("No OpenAI, Anthropic, or Grok key")
 
                 tasks: List[Coroutine[Any, Any, Completion]] = []
                 for index, model in enumerate(variant_models):
-                    if model == Llm.GPT_4O_2024_11_20 or model == Llm.O1_2024_12_17:
+                    if model == Llm.GROK_4:
+                        if grok_api_key is None:
+                            await throw_error("Grok API key is missing.")
+                            raise Exception("Grok API key is missing.")
+
+                        tasks.append(
+                            stream_grok_response(
+                                prompt_messages,
+                                api_key=grok_api_key,
+                                base_url=grok_base_url,
+                                callback=lambda x, i=index: process_chunk(x, i),
+                                model=model,
+                            )
+                        )
+                    elif model == Llm.GPT_4O_2024_11_20 or model == Llm.O1_2024_12_17:
                         if openai_api_key is None:
                             await throw_error("OpenAI API key is missing.")
                             raise Exception("OpenAI API key is missing.")
