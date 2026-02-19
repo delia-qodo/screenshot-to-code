@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { generateCode } from "./generateCode";
 import SettingsDialog from "./components/settings/SettingsDialog";
-import { AppState, CodeGenerationParams, EditorTheme, Settings } from "./types";
+import { AppState, CodeGenerationParams, EditorTheme, Settings, AppTheme } from "./types";
 import { IS_RUNNING_ON_CLOUD } from "./config";
 import { PicoBadge } from "./components/messages/PicoBadge";
 import { OnboardingNote } from "./components/messages/OnboardingNote";
@@ -67,6 +67,7 @@ function App() {
       editorTheme: EditorTheme.COBALT,
       generatedCodeConfig: Stack.HTML_TAILWIND,
       codeGenerationModel: CodeGenerationModel.CLAUDE_3_5_SONNET_2024_06_20,
+      appTheme: "system",
       // Only relevant for hosted version
       isTermOfServiceAccepted: false,
     },
@@ -104,6 +105,18 @@ function App() {
       }));
     }
   }, [settings.generatedCodeConfig, setSettings]);
+
+  // Initialize theme on mount
+  useEffect(() => {
+    const mode = settings.appTheme ?? "system";
+    import("./lib/theme").then(({ applyTheme }) => applyTheme(mode as AppTheme));
+  }, []);
+
+  // Keep theme in sync if changed elsewhere
+  useEffect(() => {
+    const mode = settings.appTheme ?? "system";
+    import("./lib/theme").then(({ applyTheme }) => applyTheme(mode as AppTheme));
+  }, [settings.appTheme]);
 
   // Functions
   const reset = () => {
