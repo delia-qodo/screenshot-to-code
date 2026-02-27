@@ -6,6 +6,8 @@ export enum EditorTheme {
   COBALT = "cobalt",
 }
 
+export type AppTheme = "light" | "dark" | "system";
+
 export interface Settings {
   openAiApiKey: string | null;
   openAiBaseURL: string | null;
@@ -14,6 +16,7 @@ export interface Settings {
   editorTheme: EditorTheme;
   generatedCodeConfig: Stack;
   codeGenerationModel: CodeGenerationModel;
+  appTheme?: AppTheme; // optional for backward-compatibility
   // Only relevant for hosted version
   isTermOfServiceAccepted: boolean;
   anthropicApiKey: string | null; // Added property for anthropic API key

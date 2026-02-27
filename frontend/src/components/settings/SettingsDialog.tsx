@@ -9,7 +9,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { FaCog } from "react-icons/fa";
-import { EditorTheme, Settings } from "../../types";
+import { AppTheme, EditorTheme, Settings } from "../../types";
 import { Switch } from "../ui/switch";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
@@ -34,6 +34,12 @@ function SettingsDialog({ settings, setSettings }: Props) {
       ...s,
       editorTheme: theme,
     }));
+  };
+
+  const setAppTheme = (theme: AppTheme) => {
+    setSettings((s) => ({ ...s, appTheme: theme }));
+    // apply immediately
+    import("../../lib/theme").then(({ applyTheme }) => applyTheme(theme));
   };
 
   return (
@@ -175,20 +181,20 @@ function SettingsDialog({ settings, setSettings }: Props) {
                     <div>App Theme</div>
                   </Label>
                   <div>
-                    <button
-                      className="flex rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50t"
-                      onClick={() => {
-                        document
-                          .querySelector("div.mt-2")
-                          ?.classList.toggle("dark"); // enable dark mode for sidebar
-                        document.body.classList.toggle("dark");
-                        document
-                          .querySelector('div[role="presentation"]')
-                          ?.classList.toggle("dark"); // enable dark mode for upload container
-                      }}
+                    <Select
+                      name="app-theme"
+                      value={settings.appTheme ?? "system"}
+                      onValueChange={(value) => setAppTheme(value as AppTheme)}
                     >
-                      Toggle dark mode
-                    </button>
+                      <SelectTrigger className="w-[180px]">
+                        {(settings.appTheme ?? "system").replace(/^[a-z]/, (c) => c.toUpperCase())}
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="light">Light</SelectItem>
+                        <SelectItem value="dark">Dark</SelectItem>
+                        <SelectItem value="system">System</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
