@@ -2,12 +2,23 @@ export type ThemeMode = "light" | "dark" | "system";
 
 const STORAGE_KEY = "theme";
 
+let systemMql: MediaQueryList | null = null;
+let systemListener: ((e: MediaQueryListEvent) => void) | null = null;
+
 export function applyTheme(theme: ThemeMode) {
   try {
     const root = document.documentElement; // <html>
     const body = document.body;
 
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    // Clean up any previous system listener
+    if (systemMql && systemListener) {
+      systemMql.removeEventListener("change", systemListener);
+      systemMql = null;
+      systemListener = null;
+    }
+
+    const mql = window.matchMedia("(prefers-color-scheme: dark)");
+    const prefersDark = mql.matches;
     const isDark = theme === "system" ? prefersDark : theme === "dark";
 
     // Persist choice for preload script in index.html
@@ -31,6 +42,13 @@ export function applyTheme(theme: ThemeMode) {
     if (uploadContainer) {
       if (isDark) (uploadContainer as HTMLElement).classList.add("dark");
       else (uploadContainer as HTMLElement).classList.remove("dark");
+    }
+
+    // React to OS theme changes while in "system" mode
+    if (theme === "system") {
+      systemMql = mql;
+      systemListener = () => applyTheme("system");
+      systemMql.addEventListener("change", systemListener);
     }
   } catch (e) {
     // no-op
