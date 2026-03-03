@@ -64,7 +64,9 @@
               document.body.classList.remove('dark');
             });
           }
-        } catch (e) {}
+        } catch (e) {
+          console.error('Theme preload error:', e);
+        }
       })();
     </script>
   </head>
