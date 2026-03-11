@@ -3,5 +3,6 @@ pr_commands = ["/agentic_describe", "/agentic_review"]
 [jira]
 jira_base_url = "https://qodo-ai.atlassian.net/"
 
-[rag_arguments]
-enable_rag=true
+[review_agent]
+comments_location_policy = 'both'  
+inline_comments_severity_threshold = 3
