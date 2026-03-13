@@ -7,8 +7,7 @@ let systemListener: ((e: MediaQueryListEvent) => void) | null = null;
 
 export function applyTheme(theme: ThemeMode) {
   try {
-    const root = document.documentElement; // <html>
-    const body = document.body;
+    const root = document.documentElement; // <html> only — single top-level indicator
 
     // Clean up any previous system listener
     if (systemMql && systemListener) {
@@ -28,20 +27,11 @@ export function applyTheme(theme: ThemeMode) {
       localStorage.setItem(STORAGE_KEY, theme);
     }
 
-    // Toggle Tailwind dark class on the root
+    // Toggle Tailwind dark class on the root element only
     if (isDark) {
       root.classList.add("dark");
-      body.classList.add("dark");
     } else {
       root.classList.remove("dark");
-      body.classList.remove("dark");
-    }
-
-    // Some containers rely on a manual dark class
-    const uploadContainer = document.querySelector('div[role="presentation"]');
-    if (uploadContainer) {
-      if (isDark) (uploadContainer as HTMLElement).classList.add("dark");
-      else (uploadContainer as HTMLElement).classList.remove("dark");
     }
 
     // React to OS theme changes while in "system" mode
@@ -51,6 +41,6 @@ export function applyTheme(theme: ThemeMode) {
       systemMql.addEventListener("change", systemListener);
     }
   } catch (e) {
-    // no-op
+    console.warn("[theme] Failed to apply theme:", e);
   }
 }
