@@ -38,8 +38,7 @@ function SettingsDialog({ settings, setSettings }: Props) {
 
   const setAppTheme = (theme: AppTheme) => {
     setSettings((s) => ({ ...s, appTheme: theme }));
-    // apply immediately
-    import("../../lib/theme").then(({ applyTheme }) => applyTheme(theme));
+    // ThemeProvider in App.tsx applies the theme via useEffect
   };
 
   return (
@@ -186,7 +185,7 @@ function SettingsDialog({ settings, setSettings }: Props) {
                       value={settings.appTheme ?? "system"}
                       onValueChange={(value) => setAppTheme(value as AppTheme)}
                     >
-                      <SelectTrigger className="w-[180px]">
+                      <SelectTrigger className="w-[180px]" aria-label="App Theme">
                         {(settings.appTheme ?? "system").replace(/^[a-z]/, (c) => c.toUpperCase())}
                       </SelectTrigger>
                       <SelectContent>

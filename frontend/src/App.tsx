@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
 import { generateCode } from "./generateCode";
 import SettingsDialog from "./components/settings/SettingsDialog";
-import { AppState, CodeGenerationParams, EditorTheme, Settings, AppTheme } from "./types";
+import { AppState, CodeGenerationParams, EditorTheme, Settings } from "./types";
+import { ThemeProvider } from "./lib/ThemeProvider";
 import { IS_RUNNING_ON_CLOUD } from "./config";
 import { PicoBadge } from "./components/messages/PicoBadge";
 import { OnboardingNote } from "./components/messages/OnboardingNote";
@@ -105,18 +106,6 @@ function App() {
       }));
     }
   }, [settings.generatedCodeConfig, setSettings]);
-
-  // Initialize theme on mount
-  useEffect(() => {
-    const mode = settings.appTheme ?? "system";
-    import("./lib/theme").then(({ applyTheme }) => applyTheme(mode as AppTheme));
-  }, []);
-
-  // Keep theme in sync if changed elsewhere
-  useEffect(() => {
-    const mode = settings.appTheme ?? "system";
-    import("./lib/theme").then(({ applyTheme }) => applyTheme(mode as AppTheme));
-  }, [settings.appTheme]);
 
   // Functions
   const reset = () => {
@@ -349,6 +338,10 @@ function App() {
   }
 
   return (
+    <ThemeProvider
+      theme={settings.appTheme ?? "system"}
+      onThemeChange={(t) => setSettings((s) => ({ ...s, appTheme: t }))}
+    >
     <div className="mt-2 dark:bg-black dark:text-white">
       {IS_RUNNING_ON_CLOUD && <PicoBadge />}
       {IS_RUNNING_ON_CLOUD && (
@@ -403,6 +396,7 @@ function App() {
         )}
       </main>
     </div>
+    </ThemeProvider>
   );
 }
 
