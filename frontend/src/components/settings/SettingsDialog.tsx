@@ -22,13 +22,22 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "../ui/accordion";
+import { DarkModeToggle } from "../ui/DarkModeToggle";
+import { ThemeMode } from "../../lib/theme";
 
 interface Props {
   settings: Settings;
   setSettings: React.Dispatch<React.SetStateAction<Settings>>;
+  appTheme?: ThemeMode;
+  onThemeChange?: (theme: ThemeMode) => void;
 }
 
-function SettingsDialog({ settings, setSettings }: Props) {
+function SettingsDialog({
+  settings,
+  setSettings,
+  appTheme = "light",
+  onThemeChange,
+}: Props) {
   const handleThemeChange = (theme: EditorTheme) => {
     setSettings((s) => ({
       ...s,
@@ -174,22 +183,10 @@ function SettingsDialog({ settings, setSettings }: Props) {
                   <Label htmlFor="app-theme">
                     <div>App Theme</div>
                   </Label>
-                  <div>
-                    <button
-                      className="flex rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50t"
-                      onClick={() => {
-                        document
-                          .querySelector("div.mt-2")
-                          ?.classList.toggle("dark"); // enable dark mode for sidebar
-                        document.body.classList.toggle("dark");
-                        document
-                          .querySelector('div[role="presentation"]')
-                          ?.classList.toggle("dark"); // enable dark mode for upload container
-                      }}
-                    >
-                      Toggle dark mode
-                    </button>
-                  </div>
+                  <DarkModeToggle
+                    currentTheme={appTheme}
+                    onThemeChange={onThemeChange ?? (() => {})}
+                  />
                 </div>
                 <div className="flex items-center justify-between">
                   <Label htmlFor="editor-theme">
