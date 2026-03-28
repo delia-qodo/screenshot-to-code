@@ -340,7 +340,30 @@ async def stream_code(websocket: WebSocket):
                     isinstance(completion, BaseException) for completion in completions
                 )
                 if all_generations_failed:
-                    await throw_error("Error generating code. Please contact support.")
+                    # Extract the first exception to check its type
+                    first_exception = next(
+                        (e for e in completions if isinstance(e, BaseException)), None
+                    )
+                    if isinstance(first_exception, openai.RateLimitError):
+                        error_message = "Your OpenAI API key has exceeded its quota. Please check your plan and billing details or update your API key."
+                        if IS_PROD:
+                            error_message += " Alternatively, you can purchase code generation credits directly on this website."
+                        await throw_error(error_message)
+                    elif isinstance(first_exception, openai.AuthenticationError):
+                        error_message = "Incorrect OpenAI key. Please make sure your OpenAI API key is correct, or create a new OpenAI API key on your OpenAI dashboard."
+                        if IS_PROD:
+                            error_message += " Alternatively, you can purchase code generation credits directly on this website."
+                        await throw_error(error_message)
+                    elif isinstance(first_exception, openai.NotFoundError):
+                        error_message = (
+                            str(first_exception)
+                            + ". Please make sure you have followed the instructions correctly to obtain an OpenAI key with GPT vision access: https://github.com/abi/screenshot-to-code/blob/main/Troubleshooting.md"
+                        )
+                        if IS_PROD:
+                            error_message += " Alternatively, you can purchase code generation credits directly on this website."
+                        await throw_error(error_message)
+                    else:
+                        await throw_error("Error generating code. Please contact support.")
 
                     # Print the all the underlying exceptions for debugging
                     for completion in completions:
@@ -379,7 +402,7 @@ async def stream_code(websocket: WebSocket):
         except openai.NotFoundError as e:
             print("[GENERATE_CODE] Model not found", e)
             error_message = (
-                e.message
+                str(e)
                 + ". Please make sure you have followed the instructions correctly to obtain an OpenAI key with GPT vision access: https://github.com/abi/screenshot-to-code/blob/main/Troubleshooting.md"
                 + (
                     " Alternatively, you can purchase code generation credits directly on this website."
@@ -391,7 +414,7 @@ async def stream_code(websocket: WebSocket):
         except openai.RateLimitError as e:
             print("[GENERATE_CODE] Rate limit exceeded", e)
             error_message = (
-                "OpenAI error - 'You exceeded your current quota, please check your plan and billing details.'"
+                "Your OpenAI API key has exceeded its quota. Please check your plan and billing details or update your API key."
                 + (
                     " Alternatively, you can purchase code generation credits directly on this website."
                     if IS_PROD
