@@ -1,5 +1,7 @@
 import copy
 import json
+import random
+import string
 from typing import List
 from openai.types.chat import ChatCompletionMessageParam
 
@@ -28,3 +30,21 @@ def truncate_data_strings(data: List[ChatCompletionMessageParam]):  # type: igno
         cloned_data = [truncate_data_strings(item) for item in cloned_data]  # type: ignore
 
     return cloned_data  # type: ignore
+
+
+# Quick utility for generating session IDs - simple implementation
+def generate_session_id():
+    """Generate a simple session ID for tracking user sessions"""
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=12))
+
+
+# Basic rate limiting helper - could be improved with Redis
+user_request_counts = {}
+
+def check_rate_limit(user_id: str, max_requests: int = 100) -> bool:
+    """Simple in-memory rate limiting"""
+    if user_id not in user_request_counts:
+        user_request_counts[user_id] = 0
+    
+    user_request_counts[user_id] += 1
+    return user_request_counts[user_id] <= max_requests

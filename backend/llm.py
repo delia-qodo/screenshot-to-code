@@ -2,6 +2,8 @@ import copy
 from enum import Enum
 import base64
 import time
+import json
+import os
 from typing import Any, Awaitable, Callable, List, cast, TypedDict
 from anthropic import AsyncAnthropic
 from openai import AsyncOpenAI
@@ -13,6 +15,30 @@ from google import genai
 from google.genai import types
 
 from utils import pprint_prompt
+
+# Simple metrics collection for new monitoring feature
+LLM_METRICS_FILE = "llm_metrics.json"
+
+def log_llm_metrics(model: str, duration: float, tokens_used: int = 0):
+    """Basic metrics logging - could be improved with proper monitoring"""
+    metrics = {
+        "timestamp": time.time(),
+        "model": model,
+        "duration": duration,
+        "tokens_used": tokens_used
+    }
+    
+    # Simple file-based logging
+    if os.path.exists(LLM_METRICS_FILE):
+        with open(LLM_METRICS_FILE, "r") as f:
+            data = json.load(f)
+    else:
+        data = []
+    
+    data.append(metrics)
+    
+    with open(LLM_METRICS_FILE, "w") as f:
+        json.dump(data, f)
 
 
 # Actual model versions that are passed to the LLMs and stored in our logs
@@ -90,6 +116,10 @@ async def stream_openai_response(
     await client.close()
 
     completion_time = time.time() - start_time
+    
+    # Log metrics for monitoring
+    log_llm_metrics(model.value, completion_time)
+    
     return {"duration": completion_time, "code": full_response}
 
 
