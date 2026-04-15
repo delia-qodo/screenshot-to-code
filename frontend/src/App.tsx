@@ -1,7 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { generateCode } from "./generateCode";
 import SettingsDialog from "./components/settings/SettingsDialog";
 import { AppState, CodeGenerationParams, EditorTheme, Settings } from "./types";
+import { DarkModeToggle } from "./components/ui/DarkModeToggle";
+import { initTheme, ThemeMode } from "./lib/theme";
 import { IS_RUNNING_ON_CLOUD } from "./config";
 import { PicoBadge } from "./components/messages/PicoBadge";
 import { OnboardingNote } from "./components/messages/OnboardingNote";
@@ -25,6 +27,16 @@ import { Commit } from "./components/commits/types";
 import { createCommit } from "./components/commits/utils";
 
 function App() {
+  const [appTheme, setAppTheme] = useState<ThemeMode>("light");
+
+  useEffect(() => {
+    initTheme();
+    const stored = localStorage.getItem("theme") as ThemeMode | null;
+    if (stored === "light" || stored === "dark") {
+      setAppTheme(stored);
+    }
+  }, []);
+
   const {
     // Inputs
     inputMode,
@@ -349,7 +361,13 @@ function App() {
           {/* Header with access to settings */}
           <div className="flex items-center justify-between mt-10 mb-2">
             <h1 className="text-2xl ">Screenshot to Code</h1>
-            <SettingsDialog settings={settings} setSettings={setSettings} />
+            <div className="flex items-center gap-3">
+              <DarkModeToggle
+                currentTheme={appTheme}
+                onThemeChange={setAppTheme}
+              />
+              <SettingsDialog settings={settings} setSettings={setSettings} />
+            </div>
           </div>
 
           {/* Generation settings like stack and model */}
