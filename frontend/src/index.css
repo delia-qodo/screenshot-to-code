@@ -62,11 +62,11 @@
     --radius: 0.5rem;
   }
   
-  body.dark {
+  .dark body {
     background-color: black;
   }
 
-  div[role="presentation"].dark {
+  .dark div[role="presentation"] {
     background-color: #09090b !important;
   }
 
