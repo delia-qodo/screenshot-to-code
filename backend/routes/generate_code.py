@@ -332,17 +332,51 @@ async def stream_code(websocket: WebSocket):
                             )
                         )
 
+                # Helper to produce user-friendly error messages when all tasks fail
+                def _maybe_append_credits(msg: str) -> str:
+                    return msg + (
+                        " Alternatively, you can purchase code generation credits directly on this website."
+                        if IS_PROD
+                        else ""
+                    )
+
+                def _friendly_error_from_exceptions(excs: List[BaseException]) -> str:
+                    # Prioritize specific OpenAI errors first
+                    for e in excs:
+                        # Quota exceeded / rate limit
+                        if isinstance(e, openai.RateLimitError) or "insufficient_quota" in str(e) or "You exceeded your current quota" in str(e):
+                            return _maybe_append_credits(
+                                "Your OpenAI API key has exceeded its quota. Please check your plan and billing details or update your API key. See: https://platform.openai.com/account/usage and https://platform.openai.com/account/billing/overview"
+                            )
+                    for e in excs:
+                        if isinstance(e, openai.AuthenticationError):
+                            return _maybe_append_credits(
+                                "Incorrect OpenAI key. Please make sure your OpenAI API key is correct, or create a new OpenAI API key on your OpenAI dashboard."
+                            )
+                    for e in excs:
+                        if isinstance(e, openai.NotFoundError):
+                            return _maybe_append_credits(
+                                "Model not found. Please make sure you have followed the instructions correctly to obtain an OpenAI key with GPT vision access: https://github.com/abi/screenshot-to-code/blob/main/Troubleshooting.md"
+                            )
+                    # Default fallback
+                    return "Error generating code. Please contact support."
+
                 # Run the models in parallel and capture exceptions if any
                 completions = await asyncio.gather(*tasks, return_exceptions=True)
 
-                # If all generations failed, throw an error
+                # If all generations failed, throw an error with specific message when possible
                 all_generations_failed = all(
                     isinstance(completion, BaseException) for completion in completions
                 )
                 if all_generations_failed:
-                    await throw_error("Error generating code. Please contact support.")
+                    # Derive a specific, user-friendly error message
+                    exceptions_only: List[BaseException] = [
+                        c for c in completions if isinstance(c, BaseException)
+                    ]
+                    error_msg = _friendly_error_from_exceptions(exceptions_only)
+                    await throw_error(error_msg)
 
-                    # Print the all the underlying exceptions for debugging
+                    # Print all underlying exceptions for debugging
                     for completion in completions:
                         if isinstance(completion, BaseException):
                             traceback.print_exception(completion)
@@ -391,7 +425,7 @@ async def stream_code(websocket: WebSocket):
         except openai.RateLimitError as e:
             print("[GENERATE_CODE] Rate limit exceeded", e)
             error_message = (
-                "OpenAI error - 'You exceeded your current quota, please check your plan and billing details.'"
+                "Your OpenAI API key has exceeded its quota. Please check your plan and billing details or update your API key. See: https://platform.openai.com/account/usage and https://platform.openai.com/account/billing/overview"
                 + (
                     " Alternatively, you can purchase code generation credits directly on this website."
                     if IS_PROD
