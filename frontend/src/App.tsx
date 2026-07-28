@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { generateCode } from "./generateCode";
 import SettingsDialog from "./components/settings/SettingsDialog";
 import { AppState, CodeGenerationParams, EditorTheme, Settings } from "./types";
+import { ThemeProvider } from "./lib/ThemeProvider";
 import { IS_RUNNING_ON_CLOUD } from "./config";
 import { PicoBadge } from "./components/messages/PicoBadge";
 import { OnboardingNote } from "./components/messages/OnboardingNote";
@@ -67,6 +68,7 @@ function App() {
       editorTheme: EditorTheme.COBALT,
       generatedCodeConfig: Stack.HTML_TAILWIND,
       codeGenerationModel: CodeGenerationModel.CLAUDE_3_5_SONNET_2024_06_20,
+      appTheme: "system",
       // Only relevant for hosted version
       isTermOfServiceAccepted: false,
     },
@@ -336,6 +338,10 @@ function App() {
   }
 
   return (
+    <ThemeProvider
+      theme={settings.appTheme ?? "system"}
+      onThemeChange={(t) => setSettings((s) => ({ ...s, appTheme: t }))}
+    >
     <div className="mt-2 dark:bg-black dark:text-white">
       {IS_RUNNING_ON_CLOUD && <PicoBadge />}
       {IS_RUNNING_ON_CLOUD && (
@@ -390,6 +396,7 @@ function App() {
         )}
       </main>
     </div>
+    </ThemeProvider>
   );
 }
 
